@@ -13,6 +13,7 @@ jobs:
           submodules: true
       - run: |
           buildah from --name ctnr archlinux
+
           buildah run ctnr pacman --noconfirm -Syu
           buildah run ctnr pacman --noconfirm -S --needed base-devel
 
@@ -20,15 +21,17 @@ jobs:
           buildah run ctnr sh -c 'printf "%s\n" "dev ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers.d/dev'
 
           buildah copy --chown dev ctnr telegram-desktop-userfonts /home/dev/telegram-desktop-userfonts
-
           buildah config -u dev --workingdir /home/dev/telegram-desktop-userfonts ctnr
-          buildah commit --rm ctnr img
 
-          podman run --name ctnr img makepkg --noconfirm -s
+          buildah run ctnr makepkg --noconfirm -s
 
-          pkg="$(podman exec ctnr sh -c "printf '%s\n' telegram-desktop-userfonts-*-x86_64.pkg.tar.xz")"
-          podman cp ctnr:/home/dev/telegram-desktop-userfonts/$pkg ./
+          pkg="$(buildah run ctnr sh -c "printf '%s\n' telegram-desktop-userfonts-*-x86_64.pkg.tar.xz")"
+          buildah run ctnr cat "$pkg" >"$pkg"
       - uses: actions/upload-artifact@v2
         with:
           name: telegram-desktop-x86_64
           path: telegram-desktop-userfonts-*-x86_64.pkg.tar.xz
+
+# TODO: use volume or buildah mount, rather than podman cp + buildah copy or cat
+# TODO: run directly on container, rather than ubuntu-latest
+# TODO: automate -bin pkgbuild
