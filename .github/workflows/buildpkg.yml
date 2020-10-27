@@ -25,12 +25,14 @@ jobs:
 
           buildah run ctnr makepkg --noconfirm -s
 
-          pkg="$(buildah run ctnr sh -c "printf '%s\n' telegram-desktop-userfonts-*-x86_64.pkg.tar.xz")"
+          buildah run ctnr ls -l
+
+          pkg="$(buildah run ctnr sh -c "printf '%s\n' telegram-desktop-userfonts-*.pkg.*")"
           buildah run ctnr cat "$pkg" >"$pkg"
       - uses: actions/upload-artifact@v2
         with:
           name: telegram-desktop-x86_64
-          path: telegram-desktop-userfonts-*-x86_64.pkg.tar.xz
+          path: telegram-desktop-userfonts-*.pkg.*
 
 # TODO: use volume or buildah mount, rather than podman cp + buildah copy or cat
 # TODO: run directly on container, rather than ubuntu-latest
