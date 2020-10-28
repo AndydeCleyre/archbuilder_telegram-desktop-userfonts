@@ -13,17 +13,6 @@ jobs:
         with:
           submodules: true
 
-      - name: create release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
       - name: prepare build ctnr
         run: |
           buildah from --name ctnr archlinux
@@ -47,6 +36,17 @@ jobs:
           buildah run ctnr cat "$pkg" >"$pkg"
 
           echo "PKG=$pkg" >>$GITHUB_ENV
+
+      - name: create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
 
       - name: upload pkg as release asset
         id: upload-release-asset
