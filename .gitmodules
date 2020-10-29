@@ -1,3 +1,6 @@
 [submodule "telegram-desktop-userfonts"]
 	path = telegram-desktop-userfonts
 	url = https://aur.archlinux.org/telegram-desktop-userfonts
+[submodule "telegram-desktop-userfonts-bin"]
+	path = telegram-desktop-userfonts-bin
+	url = https://aur.archlinux.org/telegram-desktop-userfonts-bin
