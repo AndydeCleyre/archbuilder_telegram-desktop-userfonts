@@ -14,10 +14,9 @@ jobs:
 
       - name: prepare build ctnr
         run: |
-          buildah from --name ctnr archlinux
+          buildah from --name ctnr docker.io/library/archlinux:base-devel
 
           buildah run ctnr pacman --noconfirm -Syu
-          buildah run ctnr pacman --noconfirm -S --needed base-devel
 
           buildah run ctnr useradd -m dev
           buildah run ctnr sh -c 'printf "%s\n" "dev ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers.d/dev'
