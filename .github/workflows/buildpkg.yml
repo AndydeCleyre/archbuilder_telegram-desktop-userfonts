@@ -21,6 +21,10 @@ jobs:
           buildah run ctnr useradd -m dev
           buildah run ctnr sh -c 'printf "%s\n" "dev ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers.d/dev'
 
+          buildah copy --chown dev ctnr libtg_owt /home/dev/libtg_owt
+          buildah config -u dev --workingdir /home/dev/libtg_owt ctnr
+          buildah run ctnr makepkg --noconfirm -si
+
           buildah copy --chown dev ctnr telegram-desktop-userfonts /home/dev/telegram-desktop-userfonts
           buildah config -u dev --workingdir /home/dev/telegram-desktop-userfonts ctnr
 
