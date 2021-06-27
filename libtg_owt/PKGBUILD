@@ -9,7 +9,7 @@ arch=('x86_64')
 url='https://github.com/desktop-app/tg_owt'
 license=('custom:BSD')
 depends=('protobuf')
-makedepends=('git' 'ninja' 'unzip' 'cmake' 'libxrandr' 'libxcomposite' 'openssl' 'glibc' 'ffmpeg' 'libva' 'opus' 'yasm' 'libjpeg-turbo' 'pipewire' 'x264' 'libevent')
+makedepends=('git' 'ninja' 'unzip' 'cmake' 'libxrandr' 'libxcomposite' 'openssl' 'glibc' 'ffmpeg' 'libva' 'opus' 'yasm' 'libjpeg-turbo' 'pipewire' 'libevent' 'libxtst')
 options=('staticlibs')
 source=("tg_owt::git+${url}.git#commit=${_commit}"
         "libvpx::git+https://chromium.googlesource.com/webm/libvpx.git"
