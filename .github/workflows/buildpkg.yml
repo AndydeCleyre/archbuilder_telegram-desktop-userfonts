@@ -22,8 +22,9 @@ jobs:
           buildah run ctnr useradd -m dev
           buildah run ctnr sh -c 'printf "%s\n" "dev ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers.d/dev'
 
-          buildah copy --chown dev ctnr telegram-desktop-userfonts /home/dev/telegram-desktop-userfonts
-          buildah config -u dev --workingdir /home/dev/telegram-desktop-userfonts ctnr
+          buildah config -u dev ctnr
+          buildah run ctnr git clone https://aur.archlinux.org/telegram-desktop-userfonts.git /home/dev/telegram-desktop-userfonts
+          buildah config --workingdir /home/dev/telegram-desktop-userfonts ctnr
 
       - name: build pkg
         run: |
