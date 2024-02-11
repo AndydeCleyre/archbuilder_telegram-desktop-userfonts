@@ -18,6 +18,7 @@ jobs:
 
           buildah run ctnr pacman-key --init
           buildah run ctnr pacman --noconfirm -Syu
+          buildah run ctnr pacman --noconfirm -S git
 
           buildah run ctnr useradd -m dev
           buildah run ctnr sh -c 'printf "%s\n" "dev ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers.d/dev'
