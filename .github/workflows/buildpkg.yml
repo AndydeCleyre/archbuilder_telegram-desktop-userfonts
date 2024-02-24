@@ -21,7 +21,7 @@ jobs:
           buildah run ctnr pacman --noconfirm -S git
 
           buildah run ctnr useradd -m dev
-          buildah run ctnr sh -c 'printf "%s\n" "dev ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers.d/dev'
+          buildah run ctnr sh -c 'printf "%s\n" "dev ALL=(ALL:ALL) NOPASSWD: ALL" >>/etc/sudoers.d/dev'
 
           buildah config -u dev ctnr
           buildah run ctnr git clone https://aur.archlinux.org/telegram-desktop-userfonts.git /home/dev/telegram-desktop-userfonts
