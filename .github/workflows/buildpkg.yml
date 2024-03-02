@@ -8,34 +8,26 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: archlinux/archlinux:base-devel
     steps:
-
-      - name: start build container
-        run: podman run -d --name builder -v ${PWD}:/dest docker.io/library/archlinux:base-devel /sbin/init
 
       - name: prepare build environment
         run: |
-          podman exec builder bash -ec '
           pacman-key --init
           pacman -Sy --noconfirm archlinux-keyring
           pacman -Su --noconfirm
           pacman -S --noconfirm sudo git cmake ninja boost qt6-base
           echo "nobody ALL=(ALL) NOPASSWD: /usr/bin/pacman" | tee -a /etc/sudoers
-          '
 
       - name: build package
         run: |
-          podman exec builder bash -ec '
-          git clone https://aur.archlinux.org/telegram-desktop-userfonts.git /source
-          chown -R nobody /source
-          cd /source
+          git clone https://aur.archlinux.org/telegram-desktop-userfonts.git .
+          chown -R nobody .
           runuser -u nobody -- makepkg --syncdeps --noconfirm --cleanbuild
-          '
 
-      - name: copy built packages
+      - name: list built packages
         run: |
-          podman exec builder bash -ec 'cp -v /source/telegram-desktop-userfonts-*.pkg.* /dest'
-          echo "PKG=$(ls *.pkg.*)" | tee -a $GITHUB_ENV
+          echo "PKG=$(ls telegram-desktop-userfonts-[0-9]*.pkg.*)" | tee -a $GITHUB_ENV
 
       - name: create release
         uses: softprops/action-gh-release@v1
