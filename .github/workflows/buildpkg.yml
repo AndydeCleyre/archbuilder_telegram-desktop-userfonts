@@ -3,59 +3,41 @@ on:
   push:
     tags:
       - '[0-9]*'
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
 
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
+      - name: start build container
+        run: podman run -d --name builder -v ${PWD}:/dest docker.io/library/archlinux:base-devel /sbin/init
 
-      - name: prepare build ctnr
+      - name: prepare build environment
         run: |
-          buildah from --name ctnr docker.io/library/archlinux:base-devel
+          podman exec builder bash -ec '
+          pacman-key --init
+          pacman -Sy --noconfirm archlinux-keyring
+          pacman -Su --noconfirm
+          pacman -S --noconfirm sudo git cmake ninja boost qt6-base
+          echo "nobody ALL=(ALL) NOPASSWD: /usr/bin/pacman" | tee -a /etc/sudoers
+          '
 
-          buildah run ctnr pacman-key --init
-          buildah run ctnr pacman --noconfirm -Syu
-          buildah run ctnr pacman --noconfirm -S git
-
-          buildah run ctnr useradd -m dev
-          buildah run ctnr sh -c 'printf "%s\n" "dev ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers.d/dev'
-
-          buildah config -u dev ctnr
-          buildah run ctnr git clone https://aur.archlinux.org/telegram-desktop-userfonts.git /home/dev/telegram-desktop-userfonts
-          buildah config --workingdir /home/dev/telegram-desktop-userfonts ctnr
-
-      - name: build pkg
+      - name: build package
         run: |
-          buildah run ctnr makepkg --noconfirm -s
+          podman exec builder bash -ec '
+          git clone https://aur.archlinux.org/telegram-desktop-userfonts.git /source
+          chown -R nobody /source
+          cd /source
+          runuser -u nobody -- makepkg --syncdeps --noconfirm --cleanbuild
+          '
 
-          buildah run ctnr ls -l
-
-          pkg="$(buildah run ctnr sh -c "printf '%s\n' telegram-desktop-userfonts-*.pkg.*")"
-          buildah run ctnr cat "$pkg" >"$pkg"
-
-          echo "PKG=$pkg" >>$GITHUB_ENV
+      - name: copy built packages
+        run: |
+          podman exec builder bash -ec 'cp -v /source/telegram-desktop-userfonts-*.pkg.* /dest'
+          echo "PKG=$(ls *.pkg.*)" | tee -a $GITHUB_ENV
 
       - name: create release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
-      - name: upload pkg as release asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.PKG }}
-          asset_name: ${{ env.PKG }}
-          asset_content_type: application/zip
+          files: ${{ env.PKG }}
