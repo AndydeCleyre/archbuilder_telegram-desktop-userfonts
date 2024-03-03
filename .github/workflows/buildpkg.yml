@@ -20,8 +20,11 @@ jobs:
           echo "nobody ALL=(ALL) NOPASSWD: /usr/bin/pacman" | tee -a /etc/sudoers
 
       - name: build package
+        env:
+          SED_PKGBUILD: "/CMAKE_VERBOSE_MAKEFILE/d"
         run: |
           git clone https://aur.archlinux.org/telegram-desktop-userfonts.git .
+          sed -e ${SED_PKGBUILD} -i PKGBUILD
           chown -R nobody .
           runuser -u nobody -- makepkg --syncdeps --noconfirm --cleanbuild
 
