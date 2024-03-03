@@ -16,8 +16,16 @@ jobs:
           pacman-key --init
           pacman -Sy --noconfirm archlinux-keyring
           pacman -Su --noconfirm
-          pacman -S --noconfirm sudo git cmake ninja boost qt6-base
+          pacman -S --noconfirm pacman-contrib sudo docker git cmake extra-cmake-modules ninja meson boost qt6-base
           echo "nobody ALL=(ALL) NOPASSWD: /usr/bin/pacman" | tee -a /etc/sudoers
+
+      - name: clean up some space
+        run: |
+          df -a /
+          paccache -rk0
+          docker image prune --all --force || true
+          rm -rf /__t/*
+          df -a /
 
       - name: build package
         env:
