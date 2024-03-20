@@ -32,6 +32,8 @@ jobs:
           AWK_PKGBUILD: |
             # turn off too verbose cmake output
             /DCMAKE_VERBOSE_MAKEFILE/ { next }
+            # turn off exhaustive debuginfo
+            /DCMAKE_BUILD_TYPE/ { print "        -DCMAKE_CXX_FLAGS=-g0 \\" }
             { print }
         run: |
           git clone https://aur.archlinux.org/telegram-desktop-userfonts.git .
