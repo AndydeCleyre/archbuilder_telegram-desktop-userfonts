@@ -27,25 +27,12 @@ jobs:
           rm -rf /__t/*
           df -a /
 
-      - name: install sccache
-        uses: mozilla-actions/sccache-action@v0.0.4
-
       - name: build package
         env:
           AWK_PKGBUILD: |
             # turn off too verbose cmake output
             /DCMAKE_VERBOSE_MAKEFILE/ { next }
-            # use sccache in non-unique subdirectory for better hit rate
-            /cmake -B build/ {
-              print "    mv -v tdesktop-*-full tdesktop-full"
-              gsub(/-\$pkgver-/, "-")
-              print
-              print "        -DCMAKE_C_COMPILER_LAUNCHER=sccache \\"
-              print "        -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \\"
-              next
-            }
             { print }
-          SCCACHE_GHA_ENABLED: "true"
         run: |
           git clone https://aur.archlinux.org/telegram-desktop-userfonts.git .
           echo "${AWK_PKGBUILD}" | awk -f - PKGBUILD > PKGBUILD.ci
