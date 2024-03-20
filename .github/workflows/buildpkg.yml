@@ -56,6 +56,12 @@ jobs:
         run: |
           echo "PKG=$(ls telegram-desktop-userfonts-[0-9]*.pkg.*)" | tee -a $GITHUB_ENV
 
+      - name: preserve artifcats
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PKG }}
+          path: ${{ env.PKG }}
+
       - name: create release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
