@@ -3,59 +3,56 @@ on:
   push:
     tags:
       - '[0-9]*'
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: archlinux/archlinux:base-devel
     steps:
 
-      - uses: actions/checkout@v2
+      - name: prepare build environment
+        run: |
+          pacman-key --init
+          pacman -Sy --noconfirm archlinux-keyring
+          pacman -Su --noconfirm
+          pacman -S --noconfirm pacman-contrib sudo docker git cmake extra-cmake-modules ninja meson boost qt6-base
+          echo "nobody ALL=(ALL) NOPASSWD: /usr/bin/pacman" | tee -a /etc/sudoers
+
+      - name: clean up some space
+        run: |
+          df -a /
+          paccache -rk0
+          docker image prune --all --force || true
+          rm -rf /__t/*
+          df -a /
+
+      - name: build package
+        env:
+          AWK_PKGBUILD: |
+            # turn off too verbose cmake output
+            /DCMAKE_VERBOSE_MAKEFILE/ { next }
+            # turn off exhaustive debuginfo
+            /DCMAKE_BUILD_TYPE/ { print "        -DCMAKE_CXX_FLAGS=-g0 \\" }
+            { print }
+        run: |
+          git clone https://aur.archlinux.org/telegram-desktop-userfonts.git .
+          echo "${AWK_PKGBUILD}" | awk -f - PKGBUILD > PKGBUILD.ci
+          chown -R nobody .
+          runuser -u nobody -- makepkg --syncdeps --noconfirm --cleanbuild -p PKGBUILD.ci
+
+      - name: list built packages
+        run: |
+          echo "PKG=$(ls telegram-desktop-userfonts-[0-9]*.pkg.*)" | tee -a $GITHUB_ENV
+
+      - name: preserve artifcats
+        uses: actions/upload-artifact@v4
         with:
-          submodules: true
-
-      - name: prepare build ctnr
-        run: |
-          buildah from --name ctnr docker.io/library/archlinux:base-devel
-
-          buildah run ctnr pacman-key --init
-          buildah run ctnr pacman --noconfirm -Syu
-          buildah run ctnr pacman --noconfirm -S git
-
-          buildah run ctnr useradd -m dev
-          buildah run ctnr sh -c 'printf "%s\n" "dev ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers.d/dev'
-
-          buildah config -u dev ctnr
-          buildah run ctnr git clone https://aur.archlinux.org/telegram-desktop-userfonts.git /home/dev/telegram-desktop-userfonts
-          buildah config --workingdir /home/dev/telegram-desktop-userfonts ctnr
-
-      - name: build pkg
-        run: |
-          buildah run ctnr makepkg --noconfirm -s
-
-          buildah run ctnr ls -l
-
-          pkg="$(buildah run ctnr sh -c "printf '%s\n' telegram-desktop-userfonts-*.pkg.*")"
-          buildah run ctnr cat "$pkg" >"$pkg"
-
-          echo "PKG=$pkg" >>$GITHUB_ENV
+          name: ${{ env.PKG }}
+          path: ${{ env.PKG }}
 
       - name: create release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
-      - name: upload pkg as release asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.PKG }}
-          asset_name: ${{ env.PKG }}
-          asset_content_type: application/zip
+          files: ${{ env.PKG }}
